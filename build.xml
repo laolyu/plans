@@ -1,0 +1,27 @@
+<project name="project-publish" default="run">
+  <property name="jmeter.home" value="/opt/jmeter" />
+  <property name="report.dir" value="report" />
+  <property name="result.file" value="results/results.jtl" />
+
+  <taskdef name="jmeter" classname="org.programmerplanet.ant.taskdefs.jmeter.JMeterTask">
+    <classpath>
+      <fileset dir="${jmeter.home}/lib/ext" includes="*.jar" />
+    </classpath>
+  </taskdef>
+
+  <target name="clean">
+    <delete dir="${report.dir}" />
+    <delete file="${result.file}" />
+  </target>
+
+  <target name="run" depends="clean">
+    <mkdir dir="${report.dir}" />
+    <mkdir dir="results" />
+    <jmeter jmeterhome="${jmeter.home}" resultlog="${result.file}">
+      <testplans dir="src" includes="*.jmx" />  <!-- 关键修改：指向 src 目录 -->
+    </jmeter>
+    <exec executable="${jmeter.home}/bin/jmeter" dir="${basedir}">
+      <arg line="-g ${result.file} -o ${report.dir}" />
+    </exec>
+  </target>
+</project>
