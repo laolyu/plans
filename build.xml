@@ -1,27 +1,36 @@
-<project name="project-publish" default="run">
-  <property name="jmeter.home" value="/opt/jmeter" />
-  <property name="report.dir" value="report" />
-  <property name="result.file" value="results/results.jtl" />
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="project-publish" default="run" basedir=".">
+
+  <property name="jmeter.home"   value="/opt/jmeter"/>
+  <property name="report.dir"   value="report"/>
+  <property name="result.dir"   value="results"/>
 
   <taskdef name="jmeter" classname="org.programmerplanet.ant.taskdefs.jmeter.JMeterTask">
     <classpath>
-      <fileset dir="${jmeter.home}/lib/ext" includes="*.jar" />
+      <fileset dir="${jmeter.home}/lib/ext" includes="*.jar"/>
     </classpath>
   </taskdef>
 
-  <target name="clean">
-    <delete dir="${report.dir}" />
-    <delete file="${result.file}" />
+  <target name="run" depends="clean">
+    <mkdir dir="${result.dir}"/>
+    <mkdir dir="${report.dir}"/>
+
+    <jmeter jmeterhome="${jmeter.home}"   resultlog="${result.dir}/results.jtl">
+      <testplans dir="." includes="*.jmx"/>
+      <jvmarg value="-Xms512m"/>
+      <jvmarg value="-Xmx2g"/>
+    </jmeter>
+
+    <exec executable="${jmeter.home}/bin/jmeter">
+      <arg line="-g ${result.dir}/results.jtl   -o ${report.dir}"/>
+    </exec>
+
+    <echo message="测试执行完成！报告路径: ${report.dir}"/>
   </target>
 
-  <target name="run" depends="clean">
-    <mkdir dir="${report.dir}" />
-    <mkdir dir="results" />
-    <jmeter jmeterhome="${jmeter.home}" resultlog="${result.file}">
-      <testplans dir="src" includes="*.jmx" />  <!-- 关键修改：指向 src 目录 -->
-    </jmeter>
-    <exec executable="${jmeter.home}/bin/jmeter" dir="${basedir}">
-      <arg line="-g ${result.file} -o ${report.dir}" />
-    </exec>
+  <target name="clean">
+    <delete dir="${report.dir}"   failonerror="false"/>
+    <delete dir="${result.dir}"   failonerror="false"/>
   </target>
+
 </project>
