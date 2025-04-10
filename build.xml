@@ -1,36 +1,69 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="project-publish" default="run" basedir=".">
 
-  <property name="jmeter.home"   value="/opt/jmeter"/>
-  <property name="report.dir"   value="report"/>
-  <property name="result.dir"   value="results"/>
-
-  <taskdef name="jmeter" classname="org.programmerplanet.ant.taskdefs.jmeter.JMeterTask">
+  <!-- 必须配置 ant-contrib -->
+  <property name="ant.contrib.jar" value="${basedir}/ant-contrib-1.0b3.jar"/>
+  <taskdef resource="net/sf/antcontrib/antcontrib.properties">
     <classpath>
-      <fileset dir="${jmeter.home}/lib/ext" includes="*.jar"/>
+      <pathelement location="${ant.contrib.jar}"/>
     </classpath>
   </taskdef>
+
+  <property name="jmeter.home" value="/opt/jmeter"/>
+  <property name="report.dir" value="report"/>
+  <property name="result.dir" value="results"/>
 
   <target name="run" depends="clean">
     <mkdir dir="${result.dir}"/>
     <mkdir dir="${report.dir}"/>
 
-    <jmeter jmeterhome="${jmeter.home}"   resultlog="${result.dir}/results.jtl">
-      <testplans dir="." includes="*.jmx"/>
-      <jvmarg value="-Xms512m"/>
-      <jvmarg value="-Xmx2g"/>
-    </jmeter>
+    <!-- 使用 ant-contrib 的 foreach -->
+    <foreach param="testFile" target="process-test" inheritall="true">
+      <path>
+        <fileset dir="." includes="**/*.jmx"/>
+      </path>
+    </foreach>
+  </target>
 
-    <exec executable="${jmeter.home}/bin/jmeter">
-      <arg line="-g ${result.dir}/results.jtl   -o ${report.dir}"/>
+  <target name="process-test">
+    <tstamp>
+      <format property="exec.time" pattern="yyyyMMdd-HHmmssSSS"/>
+    </tstamp>
+
+    <!-- 生成路径（核心修改点） -->
+    <basename property="testName" file="${testFile}" suffix=".jmx"/>
+    <property name="resultFile" 
+              value="${result.dir}/${testName}/${exec.time}.jtl"/>
+    <property name="reportFolder" 
+              value="${report.dir}/${testName}/${exec.time}"/>
+
+    <!-- 创建必要目录 -->
+    <mkdir dir="${result.dir}/${testName}"/>
+    <mkdir dir="${report.dir}/${testName}"/>
+
+    <!-- 执行测试 -->
+    <exec executable="${jmeter.home}/bin/jmeter" failonerror="true">
+      <arg value="-n"/>
+      <arg value="-t"/>
+      <arg value="${testFile}"/>
+      <arg value="-l"/>
+      <arg value="${resultFile}"/>
     </exec>
 
-    <echo message="测试执行完成！报告路径: ${report.dir}"/>
+    <!-- 生成报告 -->
+    <delete dir="${reportFolder}" quiet="true"/>
+    <exec executable="${jmeter.home}/bin/jmeter" failonerror="true">
+      <env key="TZ" value="Asia/Shanghai"/>
+      <arg value="-g"/>
+      <arg value="${resultFile}"/>
+      <arg value="-o"/>
+      <arg value="${reportFolder}"/>
+    </exec>
   </target>
 
   <target name="clean">
-    <delete dir="${report.dir}"   failonerror="false"/>
-    <delete dir="${result.dir}"   failonerror="false"/>
+    <delete dir="${report.dir}" includeemptydirs="true"/>
+    <delete dir="${result.dir}" includeemptydirs="true"/>
   </target>
 
 </project>
